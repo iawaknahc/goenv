@@ -219,14 +219,13 @@ func assign(ptrs []pointer, env environment, target interface{}) error {
 	return nil
 }
 
-// TODO: Support prefix
 // TODO: Support default? (For struct field and slice element)
-func Populate(target interface{}) error {
+func Populate(prefix string, target interface{}) error {
 	ptrs, err := analyse(target)
 	if err != nil {
 		return err
 	}
-	env := parseEnvironment(Environ)
+	env := parseEnvironment(prefix, Environ)
 	ptrs = specialize(ptrs, env)
 	err = assign(ptrs, env, target)
 	return err

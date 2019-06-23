@@ -7,11 +7,11 @@ import (
 
 func TestParseEnvironment(t *testing.T) {
 	input := []string{
-		"a=",
-		"b=1=2",
-		"c=3",
+		"APP_a=",
+		"APP_b=1=2",
+		"APP_c=3",
 	}
-	actual := parseEnvironment(func() []string { return input })
+	actual := parseEnvironment("APP_", func() []string { return input })
 	expected := environment{
 		"a": "",
 		"b": "1=2",

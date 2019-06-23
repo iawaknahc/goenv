@@ -6,12 +6,20 @@ import (
 
 type environment map[string]string
 
-func parseEnvironment(environFunc func() []string) environment {
+func parseEnvironment(prefix string, environFunc func() []string) environment {
 	environ := environFunc()
 	output := make(environment, len(environ))
 	for _, keyvalue := range environ {
 		parts := strings.SplitN(keyvalue, "=", 2)
-		output[parts[0]] = parts[1]
+		name := parts[0]
+		value := parts[1]
+		if prefix != "" {
+			if !strings.HasPrefix(name, prefix) {
+				continue
+			}
+			name = strings.TrimPrefix(name, prefix)
+		}
+		output[name] = value
 	}
 	return output
 }
