@@ -10,82 +10,6 @@ import (
 
 var Environ = os.Environ
 
-type pointerPart struct {
-	Name       string
-	FieldIndex int
-	SliceIndex int
-}
-
-func (p pointerPart) String() string {
-	if p.Name != "" {
-		return p.Name
-	}
-	return strconv.Itoa(p.SliceIndex)
-}
-
-type pointer []pointerPart
-
-func (p pointer) StructField(name string, fieldIndex int) pointer {
-	output := make([]pointerPart, len(p))
-	copy(output, p)
-	output = append(output, pointerPart{
-		Name:       name,
-		FieldIndex: fieldIndex,
-	})
-	return output
-}
-
-func (p pointer) SliceIndex(sliceIndex int) pointer {
-	output := make([]pointerPart, len(p))
-	copy(output, p)
-	output = append(output, pointerPart{
-		SliceIndex: sliceIndex,
-	})
-	return output
-
-}
-
-func (p pointer) String() string {
-	strParts := make([]string, len(p))
-	for i, part := range p {
-		strParts[i] = part.String()
-	}
-	return strings.Join(strParts, "_")
-}
-
-func (p pointer) specialize(name string) (pointer, bool) {
-	var output pointer
-	l := len(p)
-	for i, part := range p {
-		if part.Name == "" {
-			trimmed := strings.TrimLeft(name, "0123456789")
-			if trimmed == name {
-				return nil, false
-			}
-			idxStr := name[:len(name)-len(trimmed)]
-			idx, _ := strconv.Atoi(idxStr)
-			output = append(output, pointerPart{
-				SliceIndex: idx,
-			})
-			name = trimmed
-		} else {
-			if !strings.HasPrefix(name, part.Name) {
-				return nil, false
-			}
-			output = append(output, part)
-			name = strings.TrimPrefix(name, part.Name)
-		}
-		if i != l-1 {
-			// Skip _
-			name = name[1:]
-		}
-	}
-	if name != "" {
-		return nil, false
-	}
-	return output, true
-}
-
 func analyse(target interface{}) ([]pointer, error) {
 	typ := reflect.TypeOf(target)
 	if typ.Kind() != reflect.Ptr {
@@ -166,8 +90,6 @@ func (a *analyzer) analyzeRec(typ reflect.Type, curr pointer) {
 func specialize(ptrs []pointer, env environment) []pointer {
 	var output []pointer
 	for _, ptr := range ptrs {
-		// TODO: Sort pointers so that largest index appear first
-		// In that case, we only need to resize the slice at most once.
 		for name := range env {
 			p, ok := ptr.specialize(name)
 			if ok {
@@ -175,6 +97,7 @@ func specialize(ptrs []pointer, env environment) []pointer {
 			}
 		}
 	}
+	sortPointers(output)
 	return output
 }
 
